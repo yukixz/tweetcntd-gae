@@ -114,7 +114,7 @@ class OAuthClient():
 		response = self.make_request( self.access_url, 
 										token=auth_token,
 										additional_params={"oauth_verifier": auth_verifier} )
-		result = parse_qs(result.content)
+		result = parse_qs(response.content)
 		return result["user_id"][0], result["oauth_token"][0], result["oauth_token_secret"][0]
 	
 	def _get_auth_token(self):
@@ -123,7 +123,7 @@ class OAuthClient():
 		Returns the auth token.
 		'''
 		response = self.make_request(self.request_url)
-		result = parse_qs(result.content)
+		result = parse_qs(response.content)
 		return result["oauth_token"][0]
 
 class TwitterClient(OAuthClient):
