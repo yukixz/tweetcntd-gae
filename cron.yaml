@@ -1,0 +1,9 @@
+cron:
+- description: update hourly
+  url: /update
+  schedule: every 1 hours from 5:30 to 23:30
+  timezone: Asia/Shanghai
+- description: tweet 
+  url: /post
+  schedule: every day 23:31
+  timezone: Asia/Shanghai
