@@ -11,8 +11,6 @@ from urllib import urlencode,quote as urlquote,unquote as urlunquote
 import urlparse, logging, base64
 from google.appengine.api import urlfetch
 
-class OAuthException(Exception):
-	pass
 
 class OAuthClient():
 	def __init__(self, consumer_key, consumer_secret, request_url, access_url, callback_url=None):
@@ -126,6 +124,7 @@ class OAuthClient():
 		result = parse_qs(response.content)
 		return result["oauth_token"][0]
 
+
 class TwitterClient(OAuthClient):
 	def __init__(self, consumer_key, consumer_secret, callback_url):
 		''' Constructor '''
@@ -140,3 +139,34 @@ class TwitterClient(OAuthClient):
 		''' Get Authorization URL '''
 		token = self._get_auth_token()
 		return "https://api.twitter.com/oauth/authorize?oauth_token=%s" % token
+	
+	def tweet(token, secret, tweet):
+		''' Make tweet '''
+		try:
+			response = self.make_request( "https://api.twitter.com/1.1/statuses/update.json", token, secret, protected=True,
+											additional_params={"status": tweet.encode("utf-8")}, method=urlfetch.POST )
+		except Exception, msg:
+			logging.error("client.tweet():")
+			logging.error("token: %s\nsecret: %s", (token. secret) )
+			logging.error("response.status_code: %d\nresponse.content: %s" % (response.status_code, response.content) )
+			logging.error("message: %s" % msg)
+		
+		return response
+	
+	def load_usrtl(token, secret, since_id=0, max_id=0, blocksize=200):
+		''' Load User Timeline '''
+		try:
+			if max_id:
+				response = self.make_request( "https://api.twitter.com/1.1/statuses/user_timeline.json?trim_user=1&since_id=%d&max_id=%d&count=%d" % (since_id, max_id, blocksize),
+												token, secret, protected=True, method=urlfetch.GET )
+			else:
+				response = self.make_request( "https://api.twitter.com/1.1/statuses/user_timeline.json?trim_user=1&since_id=%d&count=%d" % (since_id, blocksize),
+												token, secret, protected=True, method=urlfetch.GET )
+		except Exception, msg:
+			logging.error("client.load_usrtl():")
+			logging.error("token: %s\nsecret: %s", (token. secret) )
+			logging.error("response.status_code: %d\nresponse.content: %s" % (response.status_code, response.content) )
+			logging.error("message: %s" % msg)
+		
+		return response
+	

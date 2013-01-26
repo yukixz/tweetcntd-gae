@@ -4,13 +4,24 @@
 
 import webapp2
 import logging
+import json, re
+from datetime import *
 import oauth, gdb
 
+# ### SETTING ###
+AUTH_KEY = '0x0'
+VERSION = 'dev'
 CONSUMER_KEY = 'CjUSfZ1IDHrBe9dLu5Viyw'
 CONSUMER_SECRET = '3iUPswMl97gxxirCK5rVN3MvNqM5AcB1dTnxlmdMyQ'
 TWEET_MIN = 16
-AUTH_KEY = '0x0'
-VERSION = 'dev'
+TIMEZONE = 8
+PERIOD_TIME = "153000" # 233000 - 080000
+def get_period_time():
+	''' Returns the farmatted time string of countting period. '''
+	now_tz = datetime.now() + timedelta(hours=TIMEZONE)
+	end = now_tz.strftime("%Y%m%d") + PERIOD_TIME
+	start = (now_tz - timedelta(hours=24)).strftime("%Y%m%d") + PERIOD_TIME
+	return start, end
 
 class OauthS(webapp2.RequestHandler):
 	def get(self, mode=''):
@@ -66,26 +77,66 @@ class PostS(webapp2.RequestHandler):
 		
 		for user in all_users:
 			# Load count and tweet it.
-			try:
-				(sum, re, rt, rts, last) = gdb.load_count(user.user_id)
-			except Exception, msg:
-				logging.error("/post:gdb")
-				logging.error("user_id: %d", user.user_id)
-				logging.error(msg)
-			try:
-				client.tweet(user.token, user.secret, (sum, re, rt, rts))
-			except Exception, msg:
-				logging.error("/post:tweet")
-				logging.error("user_id: %d", user.user_id)
-				logging.error(msg)
+			(sum, re, rt, rts, last) = gdb.load_count(user.user_id)
 			
+			tweet = u"本日共发 %s 推，其中 @ %s 推（%s%%）、RT @ %s 推（%s%%）、Retweet %s 推（%s%%） #tweetcntd" % (
+					sum, re, round(float(re)/sum*100, 1), rt, round(float(rt)/sum*100, 1), rts, round(float(rts)/sum*100, 1) )
+			client.tweet(user.token, user.secret, tweet)
+	
 
-def format_date(ss, MONTH2NUMBER={'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06', 'Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'}):
-	return ''.join([ ss[26:30],MONTH2NUMBER[ss[4:7]],ss[8:10],ss[11:13],ss[14:16],ss[17:19] ])
+def format_time(ss, MONTH2NUMBER={'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06', 'Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'}):
+	return ''.join(( ss[26:30],MONTH2NUMBER[ss[4:7]],ss[8:10],ss[11:13],ss[14:16],ss[17:19] ))
 
 class UpdateS(webapp2.RequestHandler):
 	def get(self):
-		pass
+		# Ridirect to host if not call by cron.yaml
+		if not self.request.headers.has_key( "X-AppEngine-Cron" ) or not self.request.headers['X-AppEngine-Cron'] :
+			self.redirect(self.request.host_url)
+			return
+		
+		# init constant
+		all_users = gdb.all_users()
+		client = oauth.TwitterClient( CONSUMER_KEY, CONSUMER_SECRET, "%s/oauth/verify" % self.request.host_url )
+		start_time, end_time = get_period_time()
+		PATTERN_RE = re.compile( r'^(@\w+)\b.*$' )
+		PATTERN_RT = re.compile( r'^.*?(RT ?@\w+)\b.*$' )
+		
+		for user in all_users:
+			# init user's status
+			(sum, sum_re, sum_rt, sum_rts, since_id) = gdb.load_count(user.user_id)
+			skip = 0
+			since_id -=1
+			max_id = None
+			timeline = []
+			
+			# Generate user's new tweets' blocks
+			while not since_id==max_id:
+				response = client.load_usrtl(user.token, user.secret, since_id, max_id, 200)
+				if response.status_code != 200:	#### Should be modified.
+					break
+				block = json.load(response.content)
+				timeline.extend(block)
+				max_id = block[len(block)-1]["id"]
+			
+			# Count user's tweets
+			for tweet in timeline:
+				tweet_time = format_time(tweet["created_at"])
+				if tweet_time > end_time:
+					skip +=1
+					continue
+				elif tweet_time > start_time:
+					sum +=1
+					if tweet.has_key( "retweeted_status" ):
+						sum_rts += 1
+					elif PATTERN_RE.match( tweet["text"] ):
+						sum_re += 1
+					elif PATTERN_RT.match( tweet["text"] ):
+						sum_rt +=1
+				else:
+					break
+			
+			# Save user's status
+			gdb.load_count(user.user_id, sum, sum_re, sum_rt, sum_rts, timeline[skip]["id"])
 	
 
 class DefaultS(webapp2.RequestHandler):

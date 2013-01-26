@@ -1,7 +1,7 @@
 cron:
 - description: update hourly
   url: /update
-  schedule: every 1 hours from 5:30 to 23:30
+  schedule: every 1 hours from 0:30 to 23:30
   timezone: Asia/Shanghai
 - description: tweet 
   url: /post
