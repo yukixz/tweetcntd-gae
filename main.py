@@ -68,7 +68,7 @@ class OauthS(webapp2.RequestHandler):
 class PostS(webapp2.RequestHandler):
 	def get(self):
 		# Ridirect to host if not call by cron.yaml
-		if not self.request.headers.has_key( "X-AppEngine-Cron" ) or not self.request.headers['X-AppEngine-Cron'] :
+		if not (self.request.headers.has_key( "X-AppEngine-Cron" ) and self.request.headers['X-AppEngine-Cron']) :
 			self.redirect(self.request.host_url)
 			return
 		
@@ -80,7 +80,7 @@ class PostS(webapp2.RequestHandler):
 			(sum, re, rt, rts, last) = gdb.load_count(user.user_id)
 			
 			tweet = u"本日共发 %s 推，其中 @ %s 推（%s%%）、RT @ %s 推（%s%%）、Retweet %s 推（%s%%） #tweetcntd" % (
-					sum, re, round(float(re)/sum*100, 1), rt, round(float(rt)/sum*100, 1), rts, round(float(rts)/sum*100, 1) )
+					sum, re, float(re)/sum*100 , rt, float(rt)/sum*100, rts, float(rts)/sum*100 )
 			client.tweet(user.token, user.secret, tweet)
 	
 
@@ -90,7 +90,7 @@ def format_time(ss, MONTH2NUMBER={'Jan':'01','Feb':'02','Mar':'03','Apr':'04','M
 class UpdateS(webapp2.RequestHandler):
 	def get(self):
 		# Ridirect to host if not call by cron.yaml
-		if not self.request.headers.has_key( "X-AppEngine-Cron" ) or not self.request.headers['X-AppEngine-Cron'] :
+		if not (self.request.headers.has_key( "X-AppEngine-Cron" ) and self.request.headers['X-AppEngine-Cron']) :
 			self.redirect(self.request.host_url)
 			return
 		
@@ -105,22 +105,24 @@ class UpdateS(webapp2.RequestHandler):
 			# init user's status
 			(sum, sum_re, sum_rt, sum_rts, since_id) = gdb.load_count(user.user_id)
 			skip = 0
-			since_id -=1
 			max_id = None
 			timeline = []
 			
 			## fixed new user
-			if since_id < 0:
-				block = [{"created_at":"Tue Feb 14 00:00:00 +0000 1984"}]
+			if since_id==0:
+				block = [{"created_at":"Tue Feb 14 00:00:00 +0000 9999"}]	## Magic Number
 			
 			# Generate user's new tweets' blocks
-			while (not since_id==max_id) if since_id>0 else (format_time(block[len(block)-1]["created_at"])):
+			while (since_id != max_id) if since_id>0 else (format_time(block[len(block)-1]["created_at"]) > start_time):
 				response = client.load_usrtl(user.token, user.secret, since_id, max_id, 200)
 				if response.status_code != 200:	#### Should be modified.
-					break
-				block = json.load(response.content)
+					break # while
+				block = json.loads(response.content)
 				timeline.extend(block)
-				max_id = block[len(block)-1]["id"]
+				if len(block):
+					max_id = block[len(block)-1]["id"]
+				else:
+					break # while
 			
 			# Count user's tweets
 			for tweet in timeline:
@@ -137,10 +139,12 @@ class UpdateS(webapp2.RequestHandler):
 					elif PATTERN_RT.match( tweet["text"] ):
 						sum_rt +=1
 				else:
-					break
+					break # for
 			
 			# Save user's status
-			gdb.save_count(user.user_id, sum, sum_re, sum_rt, sum_rts, timeline[skip]["id"])
+			if len(timeline):
+				logging.debug("%d: %d, %d" % (user.user_id, sum, timeline[skip]["id"]) )
+				gdb.save_count(user.user_id, sum, sum_re, sum_rt, sum_rts, timeline[skip]["id"])
 	
 
 class DefaultS(webapp2.RequestHandler):

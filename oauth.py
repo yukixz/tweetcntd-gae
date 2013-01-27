@@ -140,7 +140,7 @@ class TwitterClient(OAuthClient):
 		token = self._get_auth_token()
 		return "https://api.twitter.com/oauth/authorize?oauth_token=%s" % token
 	
-	def tweet(token, secret, tweet):
+	def tweet(self, token, secret, tweet):
 		''' Make tweet '''
 		try:
 			response = self.make_request( "https://api.twitter.com/1.1/statuses/update.json", token, secret, protected=True,
@@ -153,15 +153,18 @@ class TwitterClient(OAuthClient):
 		
 		return response
 	
-	def load_usrtl(token, secret, since_id=0, max_id=0, blocksize=200):
-		''' Load User Timeline '''
+	def load_usrtl(self, token, secret, since_id, max_id, count):
+		''' Load User Timeline 
+		response will contain one tweet at least( since_id ).
+		'''
+		params = {}
+		params.update( {"since_id":since_id} if since_id else {} )
+		params.update( {"max_id":max_id} if max_id else {} )
+		params.update( {"count":count} if count else {} )
+		
 		try:
-			if max_id:
-				response = self.make_request( "https://api.twitter.com/1.1/statuses/user_timeline.json?trim_user=1&since_id=%d&max_id=%d&count=%d" % (since_id, max_id, blocksize),
-												token, secret, protected=True, method=urlfetch.GET )
-			else:
-				response = self.make_request( "https://api.twitter.com/1.1/statuses/user_timeline.json?trim_user=1&since_id=%d&count=%d" % (since_id, blocksize),
-												token, secret, protected=True, method=urlfetch.GET )
+			response = self.make_request( "https://api.twitter.com/1.1/statuses/user_timeline.json?trim_user=1&%s" % urlencode(params),
+											token, secret, protected=True, method=urlfetch.GET )
 		except Exception, msg:
 			logging.error("client.load_usrtl():")
 			logging.error("token: %s\nsecret: %s", (token. secret) )
