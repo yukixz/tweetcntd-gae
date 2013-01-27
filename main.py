@@ -10,7 +10,7 @@ import oauth, gdb
 
 # ### SETTING ###
 AUTH_KEY = '0x0'
-VERSION = 'dev'
+VERSION = 'ver 0.2.0'
 CONSUMER_KEY = 'CjUSfZ1IDHrBe9dLu5Viyw'
 CONSUMER_SECRET = '3iUPswMl97gxxirCK5rVN3MvNqM5AcB1dTnxlmdMyQ'
 TWEET_MIN = 16
