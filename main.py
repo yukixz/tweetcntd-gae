@@ -109,8 +109,12 @@ class UpdateS(webapp2.RequestHandler):
 			max_id = None
 			timeline = []
 			
+			## fixed new user
+			if since_id < 0:
+				block = [{"created_at":"Tue Feb 14 00:00:00 +0000 1984"}]
+			
 			# Generate user's new tweets' blocks
-			while not since_id==max_id:
+			while (not since_id==max_id) if since_id>0 else (format_time(block[len(block)-1]["created_at"])):
 				response = client.load_usrtl(user.token, user.secret, since_id, max_id, 200)
 				if response.status_code != 200:	#### Should be modified.
 					break
@@ -136,7 +140,7 @@ class UpdateS(webapp2.RequestHandler):
 					break
 			
 			# Save user's status
-			gdb.load_count(user.user_id, sum, sum_re, sum_rt, sum_rts, timeline[skip]["id"])
+			gdb.save_count(user.user_id, sum, sum_re, sum_rt, sum_rts, timeline[skip]["id"])
 	
 
 class DefaultS(webapp2.RequestHandler):
