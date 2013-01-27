@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @copyright:	GPL v3
+# @copying:	GPL v3
 # @author:	Dazzy Ding (dazzyd, @ks_magi)
 
 from google.appengine.ext import db

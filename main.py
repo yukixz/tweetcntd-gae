@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @copyright:	GPL v3
+# @copying:	GPL v3
 # @author:	Dazzy Ding (dazzyd, @ks_magi)
 
 import webapp2
@@ -22,6 +22,7 @@ def get_period_time():
 	end = now_tz.strftime("%Y%m%d") + PERIOD_TIME
 	start = (now_tz - timedelta(hours=24)).strftime("%Y%m%d") + PERIOD_TIME
 	return start, end
+
 
 class OauthS(webapp2.RequestHandler):
 	def get(self, mode=''):
@@ -81,7 +82,8 @@ class PostS(webapp2.RequestHandler):
 			
 			tweet = u"本日共发 %s 推，其中 @ %s 推（%s%%）、RT @ %s 推（%s%%）、Retweet %s 推（%s%%） #tweetcntd" % (
 					sum, re, float(re)/sum*100 , rt, float(rt)/sum*100, rts, float(rts)/sum*100 )
-			client.tweet(user.token, user.secret, tweet)
+			if sum > TWEET_MIN:
+				client.tweet(user.token, user.secret, tweet)
 	
 
 def format_time(ss, MONTH2NUMBER={'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06', 'Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'}):
