@@ -167,7 +167,7 @@ class TwitterClient(OAuthClient):
 											token, secret, protected=True, method=urlfetch.GET )
 		except Exception, msg:
 			logging.error("client.load_usrtl():")
-			logging.error("token: %s\nsecret: %s", (token. secret) )
+			logging.error("token: %s\nsecret: %s" % (token, secret) )
 			logging.error("response.status_code: %d\nresponse.content: %s" % (response.status_code, response.content) )
 			logging.error("message: %s" % msg)
 		
