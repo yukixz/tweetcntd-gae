@@ -69,21 +69,23 @@ class OauthS(webapp2.RequestHandler):
 class PostS(webapp2.RequestHandler):
 	def get(self):
 		# Ridirect to host if not call by cron.yaml
-		if not (self.request.headers.has_key( "X-AppEngine-Cron" ) and self.request.headers['X-AppEngine-Cron']) :
-			self.redirect(self.request.host_url)
-			return
+		#if not (self.request.headers.has_key( "X-AppEngine-Cron" ) and self.request.headers['X-AppEngine-Cron']) :
+			#self.redirect(self.request.host_url)
+			#return
 		
 		all_users = gdb.all_users()
 		client = oauth.TwitterClient( CONSUMER_KEY, CONSUMER_SECRET, "%s/oauth/verify" % self.request.host_url )
 		
 		for user in all_users:
 			# Load count and tweet it.
-			(sum, re, rt, rts, last) = gdb.load_count(user.user_id)
+			(sum, re, rt, rts, last) = gdb.load_count(user)
+			gdb.reset_count(user)
 			
-			tweet = u"本日共发 %s 推，其中 @ %s 推（%s%%）、RT @ %s 推（%s%%）、Retweet %s 推（%s%%） #tweetcntd" % (
-					sum, re, float(re)/sum*100 , rt, float(rt)/sum*100, rts, float(rts)/sum*100 )
 			if sum > TWEET_MIN:
-				client.tweet(user.token, user.secret, tweet)
+				tweet = u"本日共发 %s 推，其中 @ %s 推（%.1f%%）、RT @ %s 推（%.1f%%）、Retweet %s 推（%.1f%%） #tweetcntd" % (
+						sum, re, float(re)/sum*100 , rt, float(rt)/sum*100, rts, float(rts)/sum*100 )
+				#client.tweet(user.token, user.secret, tweet)
+				logging.debug("%d: %s" % (user.user_id, tweet) )
 	
 
 def format_time(ss, MONTH2NUMBER={'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06', 'Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'}):
@@ -92,9 +94,9 @@ def format_time(ss, MONTH2NUMBER={'Jan':'01','Feb':'02','Mar':'03','Apr':'04','M
 class UpdateS(webapp2.RequestHandler):
 	def get(self):
 		# Ridirect to host if not call by cron.yaml
-		if not (self.request.headers.has_key( "X-AppEngine-Cron" ) and self.request.headers['X-AppEngine-Cron']) :
-			self.redirect(self.request.host_url)
-			return
+		#if not (self.request.headers.has_key( "X-AppEngine-Cron" ) and self.request.headers['X-AppEngine-Cron']) :
+			#self.redirect(self.request.host_url)
+			#return
 		
 		# init constant
 		all_users = gdb.all_users()
@@ -105,7 +107,7 @@ class UpdateS(webapp2.RequestHandler):
 		
 		for user in all_users:
 			# init user's status
-			(sum, sum_re, sum_rt, sum_rts, since_id) = gdb.load_count(user.user_id)
+			(sum, sum_re, sum_rt, sum_rts, since_id) = gdb.load_count(user)
 			skip = 0
 			max_id = None
 			timeline = []
@@ -131,7 +133,6 @@ class UpdateS(webapp2.RequestHandler):
 				tweet_time = format_time(tweet["created_at"])
 				if tweet_time > end_time:
 					skip +=1
-					continue
 				elif tweet_time > start_time:
 					sum +=1
 					if tweet.has_key( "retweeted_status" ):
@@ -145,8 +146,8 @@ class UpdateS(webapp2.RequestHandler):
 			
 			# Save user's status
 			if len(timeline):
-				logging.debug("%d: %d, %d" % (user.user_id, sum, timeline[skip]["id"]) )
-				gdb.save_count(user.user_id, sum, sum_re, sum_rt, sum_rts, timeline[skip]["id"])
+				logging.debug("%d: %d(%d,%d,%d), %d" % (user.user_id, sum, sum_re, sum_rt, sum_rts, timeline[skip]["id"]) )
+				gdb.save_count(user, sum, sum_re, sum_rt, sum_rts, timeline[skip]["id"])
 	
 
 class DefaultS(webapp2.RequestHandler):

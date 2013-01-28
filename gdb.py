@@ -29,47 +29,23 @@ def save_user(user_id, new_token, new_secret):
 	user.put()
 
 # Delete user
-def delete_user(user_id, del_token, del_secret):
-	res = User.all().filter('token = ', del_token).filter('secret = ', del_secret)
-	
-	if res.count > 0:
-		db.delete(res)
-	else:
-		logging.error("gdb.delete() Mismatch.")
-		logging.error("user_id: %d\ntoken: %s\nsecret: %s" % (user_id, del_token, del_token))
+def delete_user(user):
+	db.delete(user)
 
 
 # Save user's count
-def save_count(user_id, sum, re, rt, rts, last):
-	res = User.all().filter("user_id = ", user_id)
-	if res.count()==1:
-		json_str = json.dumps( {"sum":sum, "re":re, "rt":rt, "rts":rts} )
-		user = res.get()
-		user.tweet_count = json_str
-		user.tweet_last = last
-		user.put()
-	else:
-		logging.error("gdb.save_count():")
-		logging.error("user_id: %d\ncount: %d, %d, %d, %d" % (user_id, sum, re, rt, rts))
+def save_count(user, sum, re, rt, rts, last):
+	json_str = json.dumps( {"sum":sum, "re":re, "rt":rt, "rts":rts} )
+	user.tweet_count = json_str
+	user.tweet_last = last
+	user.put()
 
 # Load user's count
-def load_count(user_id):
-	res = User.all().filter("user_id = ", user_id)
-	if res.count()==1:
-		user = res.get()
-		json_obj = json.loads( user.tweet_count )
-		return (json_obj['sum'], json_obj['re'], json_obj['rt'], json_obj['rts'], user.tweet_last)
-	else:
-		logging.error("gdb.load_count():")
-		logging.error("user_id: %d" % (user_id))
+def load_count(user):
+	json_obj = json.loads( user.tweet_count )
+	return (json_obj['sum'], json_obj['re'], json_obj['rt'], json_obj['rts'], user.tweet_last)
 	
 # Reset user's count
-def reset_count(user_id):
-	res = User.all().filter("user_id = ", user_id)
-	if res.count()==1:
-		user = res.get()
-		user.tweet_count = '{"rt": 0, "re": 0, "sum": 0, "rts": 0}'
-		user.put()
-	else:
-		logging.error("gdb.load_count():")
-		logging.error("user_id: %d" % (user_id))
+def reset_count(user):
+	user.tweet_count = '{"rt": 0, "re": 0, "sum": 0, "rts": 0}'
+	user.put()
