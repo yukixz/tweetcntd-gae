@@ -158,9 +158,9 @@ class TwitterClient(OAuthClient):
 		response will contain one tweet at least( since_id ).
 		'''
 		params = {}
-		params.update( {"since_id":since_id} if since_id else {} )
-		params.update( {"max_id":max_id} if max_id else {} )
-		params.update( {"count":count} if count else {} )
+		params.update( {"since_id":since_id} if since_id>0 else {} )
+		params.update( {"max_id":max_id} if max_id>0 else {} )
+		params.update( {"count":count} if count>0 else {} )
 		
 		try:
 			response = self.make_request( "https://api.twitter.com/1.1/statuses/user_timeline.json?trim_user=1&%s" % urlencode(params),
