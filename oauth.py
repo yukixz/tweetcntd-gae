@@ -147,9 +147,10 @@ class TwitterClient(OAuthClient):
 											additional_params={"status": tweet.encode("utf-8")}, method=urlfetch.POST )
 		except Exception, msg:
 			logging.error("client.tweet():")
-			logging.error("token: %s\nsecret: %s", (token. secret) )
-			logging.error("response.status_code: %d\nresponse.content: %s" % (response.status_code, response.content) )
 			logging.error("message: %s" % msg)
+			logging.error("token: %s\nsecret: %s", (token, secret) )
+			logging.error("response.status_code: %d\nresponse.content: %s" % (response.status_code, response.content)\
+							if response else "response is EMPTY" )
 		
 		return response
 	
@@ -167,9 +168,23 @@ class TwitterClient(OAuthClient):
 											token, secret, protected=True, method=urlfetch.GET )
 		except Exception, msg:
 			logging.error("client.load_usrtl():")
-			logging.error("token: %s\nsecret: %s" % (token, secret) )
-			logging.error("response.status_code: %d\nresponse.content: %s" % (response.status_code, response.content) )
 			logging.error("message: %s" % msg)
+			logging.error("token: %s\nsecret: %s" % (token, secret) )
+			logging.error("response.status_code: %d\nresponse.content: %s" % (response.status_code, response.content)\
+							if response else "response is EMPTY" )
 		
 		return response
 	
+	def load_profile(self, token, secret):
+		''' Load User Profile '''
+		try:
+			response = self.make_request( "https://api.twitter.com/1.1/account/verify_credentials.json",
+											token, secret, protected=True, method=urlfetch.GET )
+		except Exception, msg:
+			logging.error("client.load_profile():")
+			logging.error("message: %s" % msg)
+			logging.error("token: %s\nsecret: %s" % (token, secret) )
+			logging.error("response.status_code: %d\nresponse.content: %s" % (response.status_code, response.content)\
+							if response else "response is EMPTY" )
+		
+		return response

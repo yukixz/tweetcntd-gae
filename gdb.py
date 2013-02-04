@@ -11,6 +11,7 @@ class User(db.Model):
 	token		= db.StringProperty(required=True)	# Access token
 	secret		= db.StringProperty(required=True)	# Access token secret
 	auth_time	= db.DateTimeProperty(auto_now_add=True)
+	screen_name	= db.StringProperty()
 	tweet_last	= db.IntegerProperty()
 	tweet_count	= db.StringProperty()
 
@@ -25,12 +26,20 @@ def save_user(user_id, new_token, new_secret):
 	if res.count() > 0:
 		db.delete(res)
 	
-	user = User(user_id=user_id, token=new_token, secret=new_secret, tweet_last=0, tweet_count='{"rt": 0, "re": 0, "sum": 0, "rts": 0}')
+	user = User(user_id=user_id, token=new_token, secret=new_secret,
+				screen_name="", tweet_last=0, tweet_count='{"rt": 0, "re": 0, "sum": 0, "rts": 0}')
 	user.put()
 
 # Delete user
 def delete_user(user):
 	db.delete(user)
+
+
+# Save User's screen_name
+def save_name(user, name=""):
+	if name:
+		user.screen_name = name
+		user.put()
 
 
 # Save user's count
@@ -49,3 +58,8 @@ def load_count(user):
 def reset_count(user):
 	user.tweet_count = '{"rt": 0, "re": 0, "sum": 0, "rts": 0}'
 	user.put()
+
+# Reset user to empty
+def reset_user(user):
+	user.tweet_last = 0
+	reset_count(user)

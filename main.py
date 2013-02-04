@@ -10,7 +10,7 @@ import oauth, gdb
 
 # ### SETTING ###
 AUTH_KEY = '0x0'
-VERSION = 'ver 0.2.0'
+VERSION = 'ver dev'
 CONSUMER_KEY = 'CjUSfZ1IDHrBe9dLu5Viyw'
 CONSUMER_SECRET = '3iUPswMl97gxxirCK5rVN3MvNqM5AcB1dTnxlmdMyQ'
 TWEET_MIN = 16
@@ -22,6 +22,27 @@ def get_period_time():
 	end = now_tz.strftime("%Y%m%d") + PERIOD_TIME
 	start = (now_tz - timedelta(hours=24)).strftime("%Y%m%d") + PERIOD_TIME
 	return start, end
+
+
+class NameS(webapp2.RequestHandler):
+	def get(self):
+		# Ridirect to host if not call by cron.yaml
+		if not (self.request.headers.has_key( "X-AppEngine-Cron" ) and self.request.headers['X-AppEngine-Cron']) :
+			self.redirect(self.request.host_url)
+			return
+		
+		all_users = gdb.all_users()
+		client = oauth.TwitterClient( CONSUMER_KEY, CONSUMER_SECRET, "%s/oauth/verify" % self.request.host_url )
+		
+		for user in all_users:
+			response = client.load_profile(user.token, user.secret)
+			if response.status_code != 200:	#### Should be modified.
+				logging.error("load_profile()")
+				logging.error("status_code: %d\ncontent: %s" % (response.status_code, response.content) )
+				break # while
+			
+			profile = json.loads(response.content)
+			gdb.save_name(user, profile["screen_name"])
 
 
 class OauthS(webapp2.RequestHandler):
@@ -65,7 +86,7 @@ class OauthS(webapp2.RequestHandler):
 		if mode=='succ':
 			self.response.out.write( 'You have authorize this app. <br/>$username: %s' % self.request.get("user_id") )
 		
-	
+
 class PostS(webapp2.RequestHandler):
 	def get(self):
 		# Ridirect to host if not call by cron.yaml
@@ -80,10 +101,11 @@ class PostS(webapp2.RequestHandler):
 			# Load count and tweet it.
 			(sum, re, rt, rts, last) = gdb.load_count(user)
 			gdb.reset_count(user)
+			#gdb.reset_user(user)	#### Debug 
 			
 			if sum > TWEET_MIN:
-				tweet = u"本日共发 %d 推，其中 @ %d 推（%.1f%%）、RT @ %d 推（%.1f%%）、Retweet %d 推（%.1f%%） #tweetcntd" % (
-						sum, re, float(re)/sum*100 , rt, float(rt)/sum*100, rts, float(rts)/sum*100 )
+				tweet = u"@%s 本日共发 %d 推，其中 @ %d 推（%.1f%%）、RT @ %d 推（%.1f%%）、Retweet %d 推（%.1f%%） #tweetcntd" %\
+						( user.screen_name, sum, re, float(re)/sum*100 , rt, float(rt)/sum*100, rts, float(rts)/sum*100 )
 				client.tweet(user.token, user.secret, tweet)
 	
 
@@ -169,8 +191,9 @@ class DefaultS(webapp2.RequestHandler):
 		self.response.out.write( message.replace('#version#', VERSION).replace('#MIN#', str(TWEET_MIN)) )
 
 app = webapp2.WSGIApplication([
-		(r'/oauth/(.*)',OauthS	),
-		(r'/post',		PostS	),
 		(r'/update',	UpdateS	),
+		(r'/post',		PostS	),
+		(r'/name',		NameS	),
+		(r'/oauth/(.*)',OauthS	),
 		(r'/.*',		DefaultS)
 		])

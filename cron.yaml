@@ -3,6 +3,12 @@ cron:
   url: /update
   schedule: every 1 hours from 0:30 to 23:30
   timezone: Asia/Shanghai
+
+- description: update screen_name
+  url: /name
+  schedule: every day 23:25
+  timezone: Asia/Shanghai
+
 - description: tweet 
   url: /post
   schedule: every day 23:31
