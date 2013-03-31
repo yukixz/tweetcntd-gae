@@ -39,7 +39,7 @@ class NameS(webapp2.RequestHandler):
 			if response.status_code != 200:	#### Should be modified.
 				logging.error("load_profile()")
 				logging.error("status_code: %d\ncontent: %s" % (response.status_code, response.content) )
-				break # while
+				continue # while
 			
 			profile = json.loads(response.content)
 			gdb.save_name(user, profile["screen_name"])
@@ -84,10 +84,14 @@ class OauthS(webapp2.RequestHandler):
 				self.response.out.write( msg )
 			
 		if mode=='succ':
-			self.response.out.write( 'You have authorize this app. <br/>$username: %s' % self.request.get("user_id") )
+			self.response.out.write( 'You have authorize this app. <br/>Your Twitter id: %s' % self.request.get("user_id") )
 		
 
 class PostS(webapp2.RequestHandler):
+	def egg(sum, re, rt, rts, id):
+		ra = id % 12 + 8
+		return -sum*ra, -re*ra, -rt*ra, -rts*ra
+	
 	def get(self):
 		# Ridirect to host if not call by cron.yaml
 		if not (self.request.headers.has_key( "X-AppEngine-Cron" ) and self.request.headers['X-AppEngine-Cron']) :
@@ -96,14 +100,16 @@ class PostS(webapp2.RequestHandler):
 		
 		all_users = gdb.all_users()
 		client = oauth.TwitterClient( CONSUMER_KEY, CONSUMER_SECRET, "%s/oauth/verify" % self.request.host_url )
+		today = date.today()
+		egg = 1 if (today.month==4 and today.day==1) else 0
 		
 		for user in all_users:
 			# Load count and tweet it.
 			(sum, re, rt, rts, last) = gdb.load_count(user)
 			gdb.reset_count(user)
-			#gdb.reset_user(user)	#### Debug 
 			
 			if sum > TWEET_MIN:
+				if egg: (sum, re, rt, rts) = self.egg(sum, re, rt, rts, user.user_id)
 				tweet = u"@%s 本日共发 %d 推，其中 @ %d 推（%.1f%%）、RT @ %d 推（%.1f%%）、Retweet %d 推（%.1f%%） #tweetcntd" %\
 						( user.screen_name, sum, re, float(re)/sum*100 , rt, float(rt)/sum*100, rts, float(rts)/sum*100 )
 				client.tweet(user.token, user.secret, tweet)
