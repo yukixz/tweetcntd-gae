@@ -10,7 +10,7 @@ import oauth, gdb
 
 # ### SETTING ###
 AUTH_KEY = '0x0'
-VERSION = 'ver dev'
+VERSION = 'ver 0.2.2'
 CONSUMER_KEY = 'CjUSfZ1IDHrBe9dLu5Viyw'
 CONSUMER_SECRET = '3iUPswMl97gxxirCK5rVN3MvNqM5AcB1dTnxlmdMyQ'
 TWEET_MIN = 16
@@ -88,7 +88,7 @@ class OauthS(webapp2.RequestHandler):
 		
 
 class PostS(webapp2.RequestHandler):
-	def egg(sum, re, rt, rts, id):
+	def egg(self, sum, re, rt, rts, id):
 		ra = id % 12 + 8
 		return -sum*ra, -re*ra, -rt*ra, -rts*ra
 	
