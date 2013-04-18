@@ -110,7 +110,7 @@ class PostS(webapp2.RequestHandler):
 			
 			if sum > TWEET_MIN:
 				if egg: (sum, re, rt, rts) = self.egg(sum, re, rt, rts, user.user_id)
-				tweet = u"@%s 本日共发 %d 推，其中 @ %d 推（%.1f%%）、RT @ %d 推（%.1f%%）、Retweet %d 推（%.1f%%） #tweetcntd" %\
+				tweet = u"@tweetcntd @%s 本日共发 %d 推，其中 @ %d 推（%.1f%%）、RT @ %d 推（%.1f%%）、Retweet %d 推（%.1f%%）" %\
 						( user.screen_name, sum, re, float(re)/sum*100 , rt, float(rt)/sum*100, rts, float(rts)/sum*100 )
 				client.tweet(user.token, user.secret, tweet)
 	
